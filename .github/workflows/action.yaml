@@ -30,7 +30,7 @@ jobs:
     needs: push_to_registry
     steps:
         - name: Clear deployment using curl
-          uses: indiesdev/curl@v1
+          uses: indiesdev/curl@v1.1
           with:
             url: 'http://154.26.139.201:8080/clean/${{ secrets.NIM }}'
             method: 'DELETE'
@@ -44,7 +44,7 @@ jobs:
     needs: clear_deployment
     steps:
       - name: Deploy using curl
-        uses: indiesdev/curl@v1
+        uses: indiesdev/curl@v1.1
         with:
           url: 'http://154.26.139.201:8080/deploy'
           method: 'POST'

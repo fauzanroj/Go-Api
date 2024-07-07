@@ -3,7 +3,7 @@ run-name: ${{ github.actor }} is running ${{ github.workflow }}
 on: [push]
 
 jobs:
- up_to_dockerHub:
+ push_to_registry:
   name: Up docker image
   runs-on: ubuntu-latest
   steps:
@@ -24,22 +24,36 @@ jobs:
       push: true
       tags: ${{ secrets.DOCKER_USERNAME }}/api-${{ secrets.NIM }}:latest
 
- deployment:
-  name: Deploy docker image to kubernet
-  runs-on: ubuntu-latest
-  needs: up_to_dockerHub
-  steps:
+ clear_deployment:
+    name: Clear Previous Deployment
+    runs-on: ubuntu-latest
+    needs: push_to_registry
+    steps:
+        - name: Clear deployment using curl
+          uses: indiesdev/curl@1.1
+          with:
+            url: 'http://154.26.139.201:8080/clean/${{ secrets.NIM }}'
+            method: 'DELETE'
+            headers: '{"Content-Type": "application/json"}'
+            accept: 200
+            log-response: true
 
-   - name: Post APi to kubernet
-     uses: indiesdev/curl@v1.1
-     with:
-      url: "http://154.26.139.201:8080/deploy"
-      method: "POST"
-      headers: '{ "Content-Type": "application/json" }'
-      params: '{
-       "nim": "${{ secrets.NIM }}",
-       "nama": "${{ secrets.NAMA }}",
-       "docker_username": "${{ secrets.DOCKER_USERNAME }}"
-       }'
-      accept: 200
-      log-response: true
+ deploy_to_kubernetes:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: clear_deployment
+    steps:
+      - name: Deploy using curl
+        uses: indiesdev/curl@v1.1
+        with:
+          url: 'http://154.26.139.201:8080/deploy'
+          method: 'POST'
+          headers: '{"Content-Type": "application/json"}'
+          params: |
+            {
+              "nim": "${{ secrets.NIM }}",
+              "nama": "${{ secrets.NAMA }}",
+              "docker_username": "${{ secrets.DOCKER_USERNAME }}"
+            }
+          accept: 200
+          log-response: true
